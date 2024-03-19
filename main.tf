@@ -1,4 +1,6 @@
-data "aws_iam_policy_document" "sm_domain" {
+data "aws_iam_policy_document" "aws_retailmass_mlops_plolicy" {
+  version = "2012-10-17"
+
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -6,12 +8,22 @@ data "aws_iam_policy_document" "sm_domain" {
       identifiers = ["sagemaker.amazonaws.com"]
     }
   }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
 }
 
+
 resource "aws_iam_role" "sagemaker_domain_execution_role" {
-  name = "aws-dugb-sagemaker-domain-execution-iam-role"
-  path = "/"
-  assume_role_policy = data.aws_iam_policy_document.sm_domain.json
+  name               = "aws-test-sagemaker-domain-execution-iam-role"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.aws_retailmass_mlops_plolicy.json
 }
 
 resource "aws_iam_role_policy_attachment" "s3-fullaccess-role-policy-attach" {
@@ -28,8 +40,18 @@ resource "aws_iam_role_policy_attachment" "sagemaker-canvas-role-policy-attach" 
   role       = "${aws_iam_role.sagemaker_domain_execution_role.name}"
   policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerCanvasFullAccess"
 }
-resource "aws_sagemaker_domain" "aws_dugb_sagemaker_domain" {
-  domain_name = "aws-datauser-group-bangalore-sagemaker"
+resource "aws_iam_role_policy_attachment" "cloudformation-fullaccess-role-policy-attach" {
+  role       = "${aws_iam_role.sagemaker_domain_execution_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/AWSCloudFormationFullAccess"
+}
+resource "aws_iam_role_policy_attachment" "sagemaker-pipelineintegrations-role-policy-attach" {
+  role       = "${aws_iam_role.sagemaker_domain_execution_role.name}"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerPipelinesIntegrations"
+}
+
+
+resource "aws_sagemaker_domain" "aws_mlops_retailmass_domain" {
+  domain_name = "aws-mlops-retailmass-domain"
   auth_mode   = "IAM"
   vpc_id = var.sm_vpc_id
   subnet_ids = var.sm_subnets
@@ -41,17 +63,17 @@ resource "aws_sagemaker_domain" "aws_dugb_sagemaker_domain" {
   }
 }
 
-resource "aws_sagemaker_user_profile" "aws_dugb_week1" {
-  domain_id         = aws_sagemaker_domain.aws_dugb_sagemaker_domain.id
-  user_profile_name = "aws-dugb-mlops-week1"
+resource "aws_sagemaker_user_profile" "aws-mlops-rpc-build" {
+  domain_id         = aws_sagemaker_domain.aws_mlops_retailmass_domain.id
+  user_profile_name = "aws-mlops-rpc"
   user_settings {
     execution_role = aws_iam_role.sagemaker_domain_execution_role.arn
   }
 }
 
-resource "aws_sagemaker_app" "week1_sagemaker_pipeline" {
-  domain_id         = aws_sagemaker_domain.aws_dugb_sagemaker_domain.id
-  user_profile_name = aws_sagemaker_user_profile.aws_dugb_week1.user_profile_name
-  app_name          = "week1-aws-dugb-sagemaker-pipeline"
+resource "aws_sagemaker_app" "rpc_sagemaker_pipeline" {
+  domain_id         = aws_sagemaker_domain.aws_mlops_retailmass_domain.id
+  user_profile_name = aws_sagemaker_user_profile.aws-mlops-rpc-build.user_profile_name
+  app_name          = "default"
   app_type          = "JupyterServer"
 }

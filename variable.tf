@@ -1,14 +1,14 @@
 # Make a change according to your VPC ID
 variable "sm_vpc_id" {
-  default = "vpc-e326b89e"
+  default = "vpc-c66091a0"
 }
 
 # Make a change according to your Subnet IDs
 variable "sm_subnets" {
-  default = ["subnet-92602df4","subnet-59343357"]
+  default = ["subnet-c4718d9e"]
 }
 
 # Make a change according to your Security Groups
 variable "sm_sec_group" {
-  default = "sg-12345678"
+  default = "sg-4bab0939"
 }
